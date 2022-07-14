@@ -1,0 +1,1 @@
+scp -i MetaMarketplaceMLEng.cer clean_images.py ubuntu@ec2-18-203-93-229.eu-west-1.compute.amazonaws.com:~/.
