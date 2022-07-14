@@ -1,23 +1,6 @@
 from math import prod
 from numpy import product
 import pandas as pd
-import re
-
-
-def get_tabular_data(filepath: str, lineterminator: str = ",") -> pd.DataFrame:
-    """Function to import data from a csv file and save to a pandas dataframe, dropping all rows with missing data.
-
-    Args:
-        filepath (str): string of the path of the file to be imported
-        lineterminator (str, optional): string to state the line terminator used in the csv file. Defaults to ",".
-
-    Returns:
-        pd.DataFrame: dataframe of the csv contents, with rows with any missing data removed
-        
-    """
-    df = pd.read_csv(filepath, lineterminator=lineterminator).dropna()
-
-    return df
 
 
 def clean_price(price_column: pd.Series) -> pd.Series:
@@ -34,22 +17,8 @@ def clean_price(price_column: pd.Series) -> pd.Series:
 
     float_column = pd.to_numeric(clean_column)
 
+
     return float_column
-
-
-def convert_category(category_column: pd.Series) -> pd.Series:
-    """Function taking in a pandas series and converts it to type 'category'.
-
-    Args:
-        category_column (pd.Series): pandas series of data to be changed to category type
-
-    Returns:
-        pd.Series: pandas series of type category
-    """
-
-    column_cat_type = category_column.astype('category')
-
-    return column_cat_type
 
 
 def clean_product_name(product_column: pd.Series) -> pd.Series:
@@ -69,19 +38,19 @@ def clean_product_name(product_column: pd.Series) -> pd.Series:
     return clean_product_series
 
 
-def convert_integer(integer_column: pd.Series) -> pd.Series:
-    """Function to convert a column of string values containing integers to integers.
+def convert_category(category_column: pd.Series) -> pd.Series:
+    """Function taking in a pandas series and converts it to type 'category'.
 
     Args:
-        integer_column (pd.Series): pandas series of strings containing integer characters
+        category_column (pd.Series): pandas series of data to be changed to category type
 
     Returns:
-        pd.Series: pandas series containing type integer
+        pd.Series: pandas series of type category
     """
 
-    integer_column = integer_column.astype('int64')
+    column_cat_type = category_column.astype('category')
 
-    return integer_column
+    return column_cat_type
 
 
 def convert_date(date_column: pd.Series) -> pd.Series:
@@ -99,6 +68,53 @@ def convert_date(date_column: pd.Series) -> pd.Series:
 
     return formatted_time_column
 
+
+def convert_integer(integer_column: pd.Series) -> pd.Series:
+    """Function to convert a column of string values containing integers to integers.
+
+    Args:
+        integer_column (pd.Series): pandas series of strings containing integer characters
+
+    Returns:
+        pd.Series: pandas series containing type integer
+    """
+
+    integer_column = integer_column.astype('int64')
+
+    return integer_column
+
+
+def get_tabular_data(filepath: str, lineterminator: str = ",") -> pd.DataFrame:
+    """Function to import data from a csv file and save to a pandas dataframe, dropping all rows with missing data.
+
+    Args:
+        filepath (str): string of the path of the file to be imported
+        lineterminator (str, optional): string to state the line terminator used in the csv file. Defaults to ",".
+
+    Returns:
+        pd.DataFrame: dataframe of the csv contents, with rows with any missing data removed
+        
+    """
+    df = pd.read_csv(filepath, lineterminator=lineterminator).dropna()
+
+    return df
+
+
+if __name__ == "__main__":
+    file_path = "Products.csv"
+    lineterminator = "\n"
+    tab_data = get_tabular_data(file_path, lineterminator)
+
+    tab_data['price'] = clean_price(tab_data['price'])
+
+    tab_data['category'] = convert_category(tab_data['category'])
+    tab_data['location'] = convert_category(tab_data['location'])
+
+    tab_data['product_name'] = clean_product_name(tab_data['product_name'])
+
+    tab_data['page_id'] = convert_integer(tab_data['page_id'])
+
+    tab_data['create_time'] = convert_date(tab_data['create_time'])
 
 
 
