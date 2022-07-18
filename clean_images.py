@@ -24,11 +24,15 @@ def clean_image_data(final_size, image):
 
 
 if __name__ == '__main__':
-    path = "images/"
+    path = "../images/"
+    new_path = "../cleaned_images/"
     dirs = os.listdir(path)
     final_size = 512
+
+    if not os.path.exists(new_path):
+        os.mkdir(new_path)
     
     for n, item in enumerate(dirs[:5], 1):
-        image = Image.open('images/' + item)
+        image = Image.open(path + item)
         new_image = clean_image_data(final_size, image)
-        new_image.save(f'cleaned_images/{n}_resized.jpg')
+        new_image.save(f'{new_path}{n}_resized.jpg')
