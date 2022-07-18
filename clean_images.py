@@ -1,7 +1,17 @@
 from PIL import Image
 import os
 
-def resize_image(final_size, image):
+
+def clean_image_data(final_size, image):
+    """Function to normalised the size and mode of the image to the input final size and RGB mode.
+
+    Args:
+        final_size (int): integer value of the final pixel size of the new image.
+        image (image): image object of desired image to normalize.
+
+    Returns:
+        image: image object of original image to formated to desired pixel size in RGB mode.
+    """
     size = image.size
     ratio = float(final_size) / max(size)
     new_image_size = tuple([int(x*ratio) for x in size])
@@ -13,10 +23,6 @@ def resize_image(final_size, image):
     return new_image
 
 
-def rgb_channels(image, r, g, b):
-    pass
-
-
 if __name__ == '__main__':
     path = "images/"
     dirs = os.listdir(path)
@@ -24,5 +30,5 @@ if __name__ == '__main__':
     
     for n, item in enumerate(dirs[:5], 1):
         image = Image.open('images/' + item)
-        new_image = resize_image(final_size, image)
-        new_image.save(f'{n}_resized.jpg')
+        new_image = clean_image_data(final_size, image)
+        new_image.save(f'cleaned_images/{n}_resized.jpg')
