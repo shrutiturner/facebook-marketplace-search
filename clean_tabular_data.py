@@ -115,7 +115,3 @@ if __name__ == "__main__":
     tab_data['page_id'] = convert_integer(tab_data['page_id'])
 
     tab_data['create_time'] = convert_date(tab_data['create_time'])
-
-
-
-
