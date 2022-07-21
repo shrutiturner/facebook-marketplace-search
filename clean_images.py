@@ -27,7 +27,7 @@ if __name__ == '__main__':
     path = "../images/"
     new_path = "../cleaned_images/"
     dirs = os.listdir(path)
-    final_size = 512
+    final_size = 64
 
     if not os.path.exists(new_path):
         os.mkdir(new_path)
