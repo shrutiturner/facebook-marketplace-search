@@ -17,7 +17,6 @@ def clean_price(price_column: pd.Series) -> pd.Series:
 
     float_column = pd.to_numeric(clean_column)
 
-
     return float_column
 
 
@@ -33,7 +32,7 @@ def clean_product_name(product_column: pd.Series) -> pd.Series:
 
     product_name_series = product_column.str.split('|').str.get(0)
 
-    clean_product_series = product_name_series.strip()
+    clean_product_series = product_name_series.str.strip()
 
     return clean_product_series
 
@@ -97,12 +96,12 @@ def get_tabular_data(filepath: str, lineterminator: str = ",") -> pd.DataFrame:
     """
     df = pd.read_csv(filepath, lineterminator=lineterminator).dropna()
 
+    df.rename(columns={'create_time\r':'create_time'}, inplace=True)
+
     return df
 
 
-if __name__ == "__main__":
-    file_path = "Products.csv"
-    lineterminator = "\n"
+def get_and_normalise_data(file_path, lineterminator):
     tab_data = get_tabular_data(file_path, lineterminator)
 
     tab_data['price'] = clean_price(tab_data['price'])
@@ -115,3 +114,13 @@ if __name__ == "__main__":
     tab_data['page_id'] = convert_integer(tab_data['page_id'])
 
     tab_data['create_time'] = convert_date(tab_data['create_time'])
+
+    return tab_data
+
+
+if __name__ == "__main__":
+    file_path = "Products.csv"
+    lineterminator = "\n"
+
+    get_and_normalise_data(file_path, lineterminator)
+    
