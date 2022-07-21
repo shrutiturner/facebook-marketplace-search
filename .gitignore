@@ -4,3 +4,4 @@ MetaMarketplaceMLEng.cer
 notes.txt
 function_playarea.ipynb
 .env
+__pycache__
