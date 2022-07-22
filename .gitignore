@@ -5,3 +5,5 @@ notes.txt
 function_playarea.ipynb
 .env
 __pycache__
+temp.py
+images_data.pkl

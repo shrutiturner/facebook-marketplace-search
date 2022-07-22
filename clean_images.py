@@ -32,7 +32,7 @@ if __name__ == '__main__':
     if not os.path.exists(new_path):
         os.mkdir(new_path)
     
-    for n, item in enumerate(dirs[:5], 1): # change index here to limit number of images processed
+    for n, item in enumerate(dirs[:], 1): # change index here to limit number of images processed
         try:
             image = Image.open(path + item)
             new_image = clean_image_data(final_size, image)

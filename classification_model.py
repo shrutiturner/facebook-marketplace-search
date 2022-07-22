@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from sklearn.linear_model import LogisticRegression
@@ -5,13 +6,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 # load pickle file into new dataframe
-image_dataframe = pd.read_pickle('image_data')
+image_dataframe = pd.read_pickle('images_data.pkl')
+
+image_dataframe['image_array'] = image_dataframe['image_array'].apply(lambda x: x.flatten())
+
 
 # features
-X = image_dataframe['image_array']
+X = list(image_dataframe['image_array'])
 
 # target
-y = image_dataframe['category']
+y = list(image_dataframe['category'])
 
 # pipeline?
 
