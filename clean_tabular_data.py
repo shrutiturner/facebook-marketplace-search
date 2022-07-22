@@ -20,7 +20,7 @@ def clean_price(price_column: pd.Series) -> pd.Series:
     return float_column
 
 
-def clean_product_name(product_column: pd.Series) -> pd.Series:
+def clean_long_names(column: pd.Series, splitter: str) -> pd.Series:
     """Function takes in the product name column and retrives the test before the first | for clarity.
 
     Args:
@@ -30,7 +30,7 @@ def clean_product_name(product_column: pd.Series) -> pd.Series:
         pd.Series: pandas series with cleaned product names
     """
 
-    product_name_series = product_column.str.split('|').str.get(0)
+    product_name_series = column.str.split(splitter).str.get(0)
 
     clean_product_series = product_name_series.str.strip()
 
@@ -106,10 +106,11 @@ def get_and_normalise_data(file_path, lineterminator):
 
     tab_data['price'] = clean_price(tab_data['price'])
 
+    tab_data['category'] = clean_long_names(tab_data['category'], '/')
     tab_data['category'] = convert_category(tab_data['category'])
     tab_data['location'] = convert_category(tab_data['location'])
 
-    tab_data['product_name'] = clean_product_name(tab_data['product_name'])
+    tab_data['product_name'] = clean_long_names(tab_data['product_name'], '|')
 
     tab_data['page_id'] = convert_integer(tab_data['page_id'])
 

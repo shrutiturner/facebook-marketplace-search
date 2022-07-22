@@ -58,9 +58,9 @@ grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, verbose=1)
 grid_search.fit(X_train, y_train)
 
 # predict with grid_search
-grid_search.predict(X_test)
+predictions = grid_search.predict(X_test)
 
 # calculate RMSE
-rmse = np.sqrt(mean_squared_error(y_test, grid_search.predict(X_test)))
+rmse = np.sqrt(mean_squared_error(y_test, predictions))
 print(f'RMSE: {rmse}')
 
