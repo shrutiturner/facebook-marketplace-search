@@ -15,7 +15,7 @@ product_categories = get_and_normalise_data(file_path, lineterminator)[['id', 'p
 product_categories.rename(columns={'id': 'product_id'}, inplace=True)
 
 # encode catgeory column
-product_categories['category'] = product_categories.category.cat.codes
+#product_categories['category'] = product_categories.category.cat.codes
 
 # import info from images.csv
 
