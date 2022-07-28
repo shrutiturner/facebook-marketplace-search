@@ -4,9 +4,10 @@ from numpy import asarray
 from skimage.io import imread
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from torchvision.transforms import ToTensor
+from torchvision import transforms, models
 from typing import Union
 
+import json
 import os
 import pandas as pd
 import torch
@@ -50,21 +51,27 @@ class ImageDataset(Dataset):
     def encode_categories(self, category_col: pd.Series) -> None:
         category_col = category_col.astype('category')
 
-        self.category_dict = dict(enumerate(category_col.cat.codes))
-        category_col = category_col.cat.codes
+        decoder_dict = dict(enumerate(category_col.cat.codes))
 
+        with open('image_decoder.json', 'w') as file:
+            json.dump(decoder_dict, file)
+        
+        category_col = category_col.cat.codes
+        
         return category_col
 
 
     def decode_categories(self) -> None:
-        self.data['category'] = self.data.category.map(self.category_dict)
+        with open('image_decoder.json', 'r') as file:
+            decoder = json.load(file)
 
+        self.data['category'] = self.data.category.map(decoder)
         return None
 
 
 def train(model, epochs=10):
     
-    optimiser = torch.optim.SGD(model.parameters(), lr=0.1)
+    optimiser = torch.optim.SGD(model.parameters(), lr=0.01)
 
     writer = SummaryWriter()
     batch_idx = 0
@@ -85,28 +92,46 @@ def train(model, epochs=10):
 class CNN(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.layers = torch.nn.Sequential(
-            torch.nn.Conv2d(3, 25, 35),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(25, 12, 7),
-            torch.nn.ReLU(),
-            torch.nn.Flatten(),
-            torch.nn.Linear(6912, 13),
-            torch.nn.ReLU(),
-            torch.nn.Softmax()
-        )
+        # self.layers = torch.nn.Sequential(
+        #     torch.nn.Conv2d(3, 45, 35),
+        #     torch.nn.ReLU(),
+        #     torch.nn.Conv2d(45, 12, 7),
+        #     torch.nn.ReLU(),
+        #     torch.nn.Flatten(),
+        #     torch.nn.Linear(6912, 13),
+        #     torch.nn.ReLU(),
+        #     torch.nn.Softmax()
+        # )
+
+        model = models.resnet18(pretrained=True)
+        num_features = model.fc.in_features
+
+        model.fc = torch.nn.Linear(num_features, 13)
+
     
     def forward(self, X):
         return self.layers(X)
 
 
-if __name__ == '__main__':
-    # load pickle file into new dataframe
-    #image_dataframe = pd.read_pickle('images_data.pkl')
-    #image_dataframe = full_image_dataframe[['image_array', 'category']]
+transform = {
+    'train': transforms.Compose([
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+    'val': transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+}
 
-    dataset = ImageDataset()
-    #dataset.encode_categories() # encodes category column
+
+if __name__ == '__main__':
+    dataset = ImageDataset(transform=transform)
+    
     dataloader = DataLoader(dataset, shuffle=True, batch_size=8)
 
     model = CNN()
