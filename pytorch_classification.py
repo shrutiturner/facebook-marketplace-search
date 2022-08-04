@@ -72,19 +72,31 @@ class ImageDataset(Dataset):
 def train(model, epochs=10):
     
     optimiser = torch.optim.SGD(model.parameters(), lr=0.01)
+    criterion = torch.nn.CrossEntropyLoss()
 
     writer = SummaryWriter()
     batch_idx = 0
 
     for epoch in range(epochs):
-        for batch in dataloader:
+        running_loss = 0.0
+        for i, batch in enumerate(dataloader, 0):
             features, labels = batch
-            prediction = model(features)
-            loss = F.cross_entropy(prediction, labels.long())
-            loss.backward()
-            print(f'Loss: {loss.item()}')
-            optimiser.step()
+
             optimiser.zero_grad()
+
+            prediction = model(features)
+            loss = criterion(prediction, labels.long())
+            loss.backward()
+            optimiser.step()
+
+            #print(f'Loss: {loss.item()}')
+
+            running_loss += loss.item()
+            if i % 2000 == 1999:
+                print(f'[{epoch+1}, {i+1:5d}] loss: {running_loss / 2000:3f}')
+                running_loss = 0.0
+
+            
             writer.add_scalar('Loss', loss.item(), batch_idx)
             batch_idx += 1
 
@@ -114,7 +126,6 @@ class CNN(torch.nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = x.reshape(x.shape[0], -1)
-        x = torch.nn.Softmax(dim=1)(x)
         return x
 
 
