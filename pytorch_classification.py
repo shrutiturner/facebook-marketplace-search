@@ -92,25 +92,30 @@ def train(model, epochs=10):
 class CNN(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        # self.layers = torch.nn.Sequential(
-        #     torch.nn.Conv2d(3, 45, 35),
-        #     torch.nn.ReLU(),
-        #     torch.nn.Conv2d(45, 12, 7),
-        #     torch.nn.ReLU(),
-        #     torch.nn.Flatten(),
-        #     torch.nn.Linear(6912, 13),
-        #     torch.nn.ReLU(),
-        #     torch.nn.Softmax()
-        # )
+        
+        self.features = models.resnet50(pretrained=True)
+        for i, param in enumerate(self.features.parameters()):
+            if i < 47:
+                param.requires_grad=False
+            else:
+                param.requires_grad=True
+        self.features.fc = torch.nn.Sequential(
+            torch.nn.Linear(2048, 1024), # first arg is the size of the flattened output from resnet50
+            torch.nn.ReLU(),
+            torch.nn.Dropout(),
+            torch.nn.Linear(1024, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear((128), 13)
+            )
 
-        model = models.resnet18(pretrained=True)
-        num_features = model.fc.in_features
 
-        model.fc = torch.nn.Linear(num_features, 13)
-
-    
-    def forward(self, X):
-        return self.layers(X)
+    def forward(self, x):
+        x = self.features(x)
+        x = x.reshape(x.shape[0], -1)
+        x = torch.nn.Softmax(dim=1)(x)
+        return x
 
 
 transform = {
@@ -130,7 +135,7 @@ transform = {
 
 
 if __name__ == '__main__':
-    dataset = ImageDataset(transform=transform)
+    dataset = ImageDataset()
     
     dataloader = DataLoader(dataset, shuffle=True, batch_size=8)
 
