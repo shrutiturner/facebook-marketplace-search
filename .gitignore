@@ -7,3 +7,5 @@ function_playarea.ipynb
 __pycache__
 temp.py
 images_data.pkl
+runs
+model_evaluation

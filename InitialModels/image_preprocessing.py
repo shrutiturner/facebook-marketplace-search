@@ -1,5 +1,5 @@
 from regex import R
-from clean_tabular_data import get_and_normalise_data
+from api.clean_tabular_data import get_and_normalise_data
 
 import os
 import numpy as np
@@ -8,7 +8,7 @@ import pandas as pd
 from numpy import asarray, product
 from PIL import Image
 
-file_path = "Products.csv"
+file_path = "../api/Products.csv" 
 lineterminator = "\n"
 
 product_categories = get_and_normalise_data(file_path, lineterminator)[['id', 'price','category']]
