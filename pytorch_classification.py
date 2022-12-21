@@ -1,3 +1,4 @@
+from datetime import datetime
 from PIL import Image
 from unicodedata import category
 from numpy import asarray
@@ -16,6 +17,11 @@ import torch.nn.functional as F
 import clean_tabular_data
 
 class ImageDataset(Dataset):
+    """Creates tensor image dataset for use in model.
+
+    Args:
+        Dataset (Dataset): Pytorch class
+    """
     def __init__(self, data_file='api/image_cats.json', root_dir='/home/ubuntu/', image_folder='cleaned_images', transform = None) -> None:
         super().__init__()
 
@@ -51,21 +57,82 @@ class ImageDataset(Dataset):
         
 
     def __len__(self) -> int:
-        return len (self.merged_data)
+        return len(self.merged_data)
 
 
-    def encode_labels(self, merged_data): #435 labels total
+    def encode_labels(self, merged_data) -> None: #435 labels total
+        """Encodes labels to integers.
+
+        Args:
+            merged_data (pd.DataFrame): DataFrame of input data about images.
+
+        Returns:
+            None: Returns None type.
+        """
         full_catagories = merged_data['category'].unique()
+        
         for cat in enumerate (full_catagories):
             self.encoded_labels[cat[1]] = cat [0]
+        
+        return None
 
 
-    def get_category(self, label_index):
+    def get_category(self, label_index) -> dict:
         
         return self.encoded_labels[label_index]
-        
 
-def train(model, epochs=10):
+
+class CNN(torch.nn.Module):
+    """Creates a convolutional neural network using transfer learning.
+
+    Args:
+        torch (torch.nn.Module): Pytorch neural network module.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        
+        self.features = models.resnet50(pretrained=True)
+        for i, param in enumerate(self.features.parameters()):
+            if i < 47:
+                param.requires_grad=False
+            else:
+                param.requires_grad=True
+        self.features.fc = torch.nn.Sequential(
+            torch.nn.Linear(2048, 1024), # first arg is the size of the flattened output from resnet50
+            torch.nn.ReLU(),
+            torch.nn.Dropout(),
+            torch.nn.Linear(1024, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear((128), 13)
+            )
+
+
+    def forward(self, inp) -> transforms.ToTensor:
+        """Input manipulation in the forwards direction of neural network.
+
+        Args:
+            inp (torchvision.tensor): input tensor of data.
+
+        Returns:
+            tensor: output tensor for neural network input.
+        """
+        inp = inp.reshape(inp.shape[0], 3, 64, 64)
+        x = self.features(inp)
+        return x
+
+
+def train(model, model_time, epochs=10) -> None:
+    """Trains model inputted in epochs.
+
+    Args:
+        model (torch.nn.models): Input neural network model to be trained.
+        epochs (int, optional): number of epochs to train model. Defaults to 10.
+
+    Returns:
+        None: None type is returned.
+    """
     
     optimiser = torch.optim.SGD(model.parameters(), lr=0.01)
     criterion = torch.nn.CrossEntropyLoss()
@@ -96,34 +163,10 @@ def train(model, epochs=10):
             
             writer.add_scalar('Loss', loss.item(), batch_idx)
             batch_idx += 1
-
-
-class CNN(torch.nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
         
-        self.features = models.resnet50(pretrained=True)
-        for i, param in enumerate(self.features.parameters()):
-            if i < 47:
-                param.requires_grad=False
-            else:
-                param.requires_grad=True
-        self.features.fc = torch.nn.Sequential(
-            torch.nn.Linear(2048, 1024), # first arg is the size of the flattened output from resnet50
-            torch.nn.ReLU(),
-            torch.nn.Dropout(),
-            torch.nn.Linear(1024, 512),
-            torch.nn.ReLU(),
-            torch.nn.Linear(512, 128),
-            torch.nn.ReLU(),
-            torch.nn.Linear((128), 13)
-            )
-
-
-    def forward(self, inp):
-        inp = inp.reshape(inp.shape[0], 3, 64, 64)
-        x = self.features(inp)
-        return x
+        torch.save(model.state_dict(), f'api/model_evaluation/{model_time}/weights/epoch_{epoch}.pt')
+    
+    return None
 
 
 if __name__ == '__main__':
@@ -134,6 +177,16 @@ if __name__ == '__main__':
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = CNN()
 
-    train(model)
+    model_time = datetime.now()
+
+    train(model, model_time)
+
+    # save model
+    state_dict = torch.save(model.state_dict(), f'api/final_models/{model_time}/image_model.pt')
+
+    # state_dict = torch.load('model.pt')
+    # new_model = CNN()
+    # new_model.load_state_dict(state_dict)
+    # train(new_model)
 
 

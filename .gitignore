@@ -8,3 +8,4 @@ __pycache__
 temp.py
 images_data.pkl
 runs
+model_evaluation
