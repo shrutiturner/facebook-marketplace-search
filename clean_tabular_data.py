@@ -94,7 +94,7 @@ def get_tabular_data(filepath: str, lineterminator: str = ",") -> pd.DataFrame:
         pd.DataFrame: dataframe of the csv contents, with rows with any missing data removed
         
     """
-    df = pd.read_csv(filepath, lineterminator=lineterminator).dropna()
+    df = pd.read_csv(filepath, lineterminator=lineterminator)
 
     df.rename(columns={'create_time\r':'create_time'}, inplace=True)
 
@@ -116,6 +116,8 @@ def get_and_normalise_data(file_path, lineterminator):
 
     tab_data['create_time'] = convert_date(tab_data['create_time'])
 
+    tab_data.rename(columns = {'id':'product_id'}, inplace = True)
+
     return tab_data
 
 
@@ -124,4 +126,3 @@ if __name__ == "__main__":
     lineterminator = "\n"
 
     get_and_normalise_data(file_path, lineterminator)
-    

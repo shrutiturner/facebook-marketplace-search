@@ -13,61 +13,57 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 
+import clean_tabular_data
+
 class ImageDataset(Dataset):
     def __init__(self, data_file='api/image_cats.json', root_dir='/home/ubuntu/', image_folder='cleaned_images', transform = None) -> None:
         super().__init__()
 
-        self.root_dir = root_dir
-        self.image_data = pd.read_json(f'{root_dir}{data_file}')
-        self.image_data['category'] = self.encode_categories(self.image_data['category'])
-        self.image_folder = image_folder
-        self.transform = transform
+        #clean and merge tabular data
+        self.prod_data = clean_tabular_data.get_and_normalise_data("api/Products.csv", '\n')
+        self.image_ids = pd.read_csv ("api/Images.csv")
+        self.merged_data = self.image_ids.merge(self.prod_data[['category','product_id']], on='product_id') #not all data is kept in the data!
+        
+        #sets labels and image 
+        self.labels = self.merged_data['category'].to_list()
+        self.image_files = self.merged_data['id'].to_list()
+
+        #encode labels
+        self.encoded_labels = {}
+        self.encode_labels(self.merged_data)
 
 
     def __getitem__(self, index) -> Union[pd.DataFrame, pd.Series]:
+        label = self.labels[index]
+        encoded_label = torch.tensor(self.encoded_labels[label])
+        image = self.image_files[index]
         try:
-            image_path = os.path.join(f'{self.root_dir}{self.image_folder}/{self.image_data.iloc[index,0]}.jpg')
-            features = imread(f'{image_path}')
-            features = torch.tensor(features).float()
-            features = features.reshape(3, 64, 64)
-
-            labels = torch.tensor(self.image_data.iloc[index,1])
-
-            if self.transform:
-                features = self.transform(features)
-            
-            return features, labels
-            
-
+            PIL_image = Image.open(f"cleaned_images/{image}.jpg")   
+            transform = transforms.PILToTensor() 
+            feature = transform(PIL_image)
+            feature = torch.flatten(feature).to(torch.float32)
+            # print (feature.shape)
+            # print ("LABEL IS")
+            # print (encoded_label)
+            return feature, encoded_label
         except Exception as e:
-            print(e) # errors expected as initially any rows with missing data were dropped from the dataframe
-            pass
+            print(e)
         
 
     def __len__(self) -> int:
-        return(len(self.image_data))
+        return len (self.merged_data)
 
 
-    def encode_categories(self, category_col: pd.Series) -> None:
-        category_col = category_col.astype('category')
+    def encode_labels(self, merged_data): #435 labels total
+        full_catagories = merged_data['category'].unique()
+        for cat in enumerate (full_catagories):
+            self.encoded_labels[cat[1]] = cat [0]
 
-        decoder_dict = dict(enumerate(category_col.cat.codes))
 
-        with open('image_decoder.json', 'w') as file:
-            json.dump(decoder_dict, file)
+    def get_category(self, label_index):
         
-        category_col = category_col.cat.codes
+        return self.encoded_labels[label_index]
         
-        return category_col
-
-
-    def decode_categories(self) -> None:
-        with open('image_decoder.json', 'r') as file:
-            decoder = json.load(file)
-
-        self.data['category'] = self.data.category.map(decoder)
-        return None
-
 
 def train(model, epochs=10):
     
@@ -88,11 +84,12 @@ def train(model, epochs=10):
             loss = criterion(prediction, labels.long())
             loss.backward()
             optimiser.step()
+            optimiser.zero_grad() #this reverts the grad value to zero so .backwards will overwright (otherwise it would just add to the grad val)
 
             #print(f'Loss: {loss.item()}')
 
             running_loss += loss.item()
-            if i % 2000 == 1999:
+            if i % 20 == 19:
                 print(f'[{epoch+1}, {i+1:5d}] loss: {running_loss / 2000:3f}')
                 running_loss = 0.0
 
@@ -123,26 +120,10 @@ class CNN(torch.nn.Module):
             )
 
 
-    def forward(self, x):
-        x = self.features(x)
-        x = x.reshape(x.shape[0], -1)
+    def forward(self, inp):
+        inp = inp.reshape(inp.shape[0], 3, 64, 64)
+        x = self.features(inp)
         return x
-
-
-transform = {
-    'train': transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    'val': transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-}
 
 
 if __name__ == '__main__':
@@ -150,8 +131,9 @@ if __name__ == '__main__':
     
     dataloader = DataLoader(dataset, shuffle=True, batch_size=8)
 
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = CNN()
 
     train(model)
 
-    #dataset.decode_categories() # decode category column
+
